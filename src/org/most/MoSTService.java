@@ -15,6 +15,7 @@
  */
 package org.most;
 
+import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.LinkedList;
 import java.util.Map;
@@ -44,6 +45,8 @@ public class MoSTService extends Service {
 	public static final String PING = "MostPing";
 	public static final String PING_ACTION = "org.most.most.ping.action";
 	public static final String KEY_PING_RESULT = "ping.result";
+	public static final String KEY_PARTICIPACT_STATE = "ping.participactstate";
+
 	public static final String KEY_PING_TIMESTAMP = "ping.timestamp";
 	public static final String KEY_PIPELINE_TYPE = "PipelineType";
 
@@ -168,6 +171,8 @@ public class MoSTService extends Service {
 			if (PING.equals(intent.getAction())) {
 				Log.i(TAG, "Received ping command");
 				logger.info("Received ping command.");
+				
+				
 
 				if (runningPipeline.get() > 0) {
 					MoSTApplication ctx = (MoSTApplication) getApplicationContext();
@@ -185,6 +190,28 @@ public class MoSTService extends Service {
 					i.putExtra(KEY_PING_RESULT, new LinkedList<Pipeline.Type>());
 					i.putExtra(KEY_PING_TIMESTAMP, System.currentTimeMillis());
 					sendBroadcast(i);
+				}
+				
+				
+				if(intent.getExtras() != null && intent.hasExtra(KEY_PARTICIPACT_STATE)){
+					HashMap<Pipeline.Type, Integer> paState = (HashMap<Pipeline.Type, Integer>) intent.getExtras().getSerializable(KEY_PARTICIPACT_STATE);
+					for (Entry<Pipeline.Type, Integer> entry : paState.entrySet()) {
+						
+						int diff = 0;
+						if(listeners.containsKey(entry.getKey())){
+							int mostCount = listeners.get(entry.getKey());
+							diff = entry.getValue() - mostCount;
+						}else{
+							diff = entry.getValue();
+						}
+						
+						if(diff > 0){
+							for(int i = 0; i < diff; i++){
+								startPipeline(entry.getKey());
+							}
+						}
+						
+					}
 				}
 			}
 		}
